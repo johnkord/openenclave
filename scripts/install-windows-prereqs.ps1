@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+# The Hash parameter defaults below are calculated using Get-FileHash with the default SHA256 hashing algorithm
 Param(
     [string]$GitURL = 'https://github.com/git-for-windows/git/releases/download/v2.19.1.windows.1/Git-2.19.1-64-bit.exe',
     [string]$GitHash = '5E11205840937DD4DFA4A2A7943D08DA7443FAA41D92CCC5DAFBB4F82E724793',
@@ -28,7 +29,8 @@ Param(
     [string]$AzureDCAPNupkgHash = '152ACE956348E80E533E63E6CB1D3CA20E4CA7DC775FC0B9413F552368F971D6',
     [Parameter(mandatory=$true)][string]$InstallPath,
     [Parameter(mandatory=$true)][bool]$WithFLC,
-    [Parameter(mandatory=$true)][bool]$WithAzureDCAPClient
+    [Parameter(mandatory=$true)][bool]$WithAzureDCAPClient,
+    [switch]$WithoutDriver
 )
 
 if ( ($WithFLC -eq $false) -and ($WithAzureDCAPClient -eq $true) )
@@ -500,12 +502,20 @@ function Install-DCAPDrivers {
                 Remove-DCAPDriver -Name $drivers[$driver]['location']
             }
         }
-        Write-Output "Installing driver $($drivers[$driver]['location'])"
-        $install = & $devConBinaryPath install "$($inf.FullName)" $drivers[$driver]['location']
-        if($LASTEXITCODE) {
-            Throw "Failed to install $driver driver"
+        if ($WithoutDriver -eq $false)
+        {
+            Write-Output "Installing driver $($drivers[$driver]['location'])"
+            $install = & $devConBinaryPath install "$($inf.FullName)" $drivers[$driver]['location']
+            if($LASTEXITCODE) {
+                Throw "Failed to install $driver driver"
+            }
+            Write-Output $install
         }
-        Write-Output $install
+        else
+        {
+            Write-Output "Copying Intel_SGX_DCAP dll files into $($env:SystemRoot)\system32"
+            Copy-item -Path $PACKAGES_DIRECTORY\Intel_SGX_DCAP\$driver\drivers\*\*.dll $env:SystemRoot\system32\
+        }
     }
     $TEMP_NUGET_DIR = "$PACKAGES_DIRECTORY\Azure_DCAP_Client_nupkg"
     New-Directory -Path $OE_NUGET_DIR -RemoveExisting
@@ -537,8 +547,11 @@ function Install-DCAPDrivers {
         Throw "Failed to install nuget EnclaveCommonAPI"
     }
 
-    # Please refer to Intel's Windows DCAP documentation for this registry setting: https://download.01.org/intel-sgx/dcap-1.2/windows/docs/Intel_SGX_DCAP_Windows_SW_Installation_Guide.pdf
-    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\sgx_lc_msr\Parameters" -Name "SGX_Launch_Config_Optin" -Value 1 -PropertyType DWORD -Force
+    if ($WithoutDriver -eq $false)
+    {
+        # Please refer to Intel's Windows DCAP documentation for this registry setting: https://download.01.org/intel-sgx/dcap-1.2/windows/docs/Intel_SGX_DCAP_Windows_SW_Installation_Guide.pdf
+        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\sgx_lc_msr\Parameters" -Name "SGX_Launch_Config_Optin" -Value 1 -PropertyType DWORD -Force
+    }
 }
 
 function Install-VCRuntime {
