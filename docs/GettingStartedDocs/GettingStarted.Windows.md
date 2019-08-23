@@ -36,6 +36,8 @@ cd scripts
 .\install-windows-prereqs.ps1 -InstallPath YOUR_WORKSPACE_PATH_HERE -WithFLC $true -WithAzureDCAPClient $true
 ```
 
+If you want to not install the Intel DCAP driver (but still want configure the system to be able to build against DCAP libraries), you can add the "-WithoutDriver" switch to the script above.
+
 To deploy each prerequisite individually, refer to the sections below.
 
 Intel® SGX Platform Software for Windows (PSW)
