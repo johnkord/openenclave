@@ -12,7 +12,7 @@
 
 // This is the identity validation callback. A TLS connecting party (client or
 // server) can verify the passed in identity information to decide whether to
-// accept a connection reqest
+// accept a connection request
 oe_result_t enclave_identity_verifier(oe_identity_t* identity, void* arg)
 {
     oe_result_t result = OE_VERIFY_FAILED;

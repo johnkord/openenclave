@@ -2,5 +2,5 @@
 # Licensed under the MIT License.
 
 if (OE_SGX)
-add_subdirectory(oecert)
+    add_subdirectory(oecert)
 endif()
