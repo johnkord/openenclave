@@ -163,7 +163,10 @@ done:
     return result;
 }
 
-int test(char out_testname[STRLEN], struct mbed_args* args)
+int test(
+    const char* in_testname,
+    char out_testname[STRLEN],
+    struct mbed_args* args)
 {
     int return_value = -1;
     printf("RUNNING: %s\n", __TEST__);
@@ -185,8 +188,9 @@ int test(char out_testname[STRLEN], struct mbed_args* args)
     }
     else
     {
-        static const char* argv[] = {"test", "-v"};
+        static const char* argv[] = {"test", "-v", "NULL"};
         static int argc = sizeof(argv) / sizeof(argv[0]);
+        argv[2] = in_testname;
         return_value = main(argc, argv);
         args->skipped = gmbed_args.skipped;
         args->total = gmbed_args.total;

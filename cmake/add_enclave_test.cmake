@@ -39,7 +39,6 @@ function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
         # enclave subpath and "host" as the default host subpath.
         # This hack can be removed when CMake on Windows produces ELF enclaves.
         set(TEST_ENCSUBPATH enc)
-        set(TEST_HOSTSUBPATH host)
 
         # (HACK2) This is a hack to figure out the target name for the linux enclave
         # Ideally, the name of the enclave is found by $<TARGET_FILE:${ENC_FILE}>
@@ -54,7 +53,7 @@ function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
         # take a dependency on host binary to make sure it exists in addition to
         # enc binary in linux
         add_custom_command(OUTPUT ${TEST_NAME}_windows_include
-            COMMAND ${CMAKE_COMMAND} -E copy ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_HOSTSUBPATH}/${TEST_ENCFILE}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}
             DEPENDS $<TARGET_FILE:${HOST_FILE}> ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             )
@@ -66,7 +65,7 @@ function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
             DEPENDS ${TEST_NAME}_windows_include
             )
 
-        add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${HOST_FILE}> ${CMAKE_CURRENT_BINARY_DIR}/${TEST_HOSTSUBPATH}/${TEST_ENCFILE} ${ARGN})
+        add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${HOST_FILE}> ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE} ${ARGN})
 
     elseif (UNIX OR USE_CLANGW)
         add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${HOST_FILE}> $<TARGET_FILE:${ENC_FILE}> ${ARGN})

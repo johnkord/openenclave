@@ -18,6 +18,7 @@ enclave {
 
     trusted {
         public int test(
+            [in, string] const char* in_testname,
             [out, size=1024] char* out_testname,
             [out] mbed_args* args);
     };
@@ -36,10 +37,10 @@ enclave {
         int mbed_test_close(
             int fd);
 
-		int mbed_test_lseek(
-			int fd,
-			int offset,
-			int whence);
+        int mbed_test_lseek(
+            int fd,
+            int offset,
+            int whence);
 
         void ocall_exit(
             int arg);
