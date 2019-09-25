@@ -52,17 +52,19 @@ function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
         # custom rule to copy binary from linux
         # take a dependency on host binary to make sure it exists in addition to
         # enc binary in linux
-        add_custom_command(OUTPUT ${TEST_NAME}_windows_include
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}
-            DEPENDS $<TARGET_FILE:${HOST_FILE}> ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            )
+	if (NOT TARGET ${TEST_ENCSUBPATH}_windows_include)
+            add_custom_command(OUTPUT ${TEST_ENCSUBPATH}_windows_include
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}
+                DEPENDS $<TARGET_FILE:${HOST_FILE}> ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                )
+        endif()
 
         # add a custom target to ALL so that this step always needs to be run if
         # this function is invoked
         get_filename_component(TEST_NAME_WITHOUT_SLASH ${TEST_NAME} NAME)
         add_custom_target(${TEST_NAME_WITHOUT_SLASH}.windows ALL
-            DEPENDS ${TEST_NAME}_windows_include
+            DEPENDS ${TEST_ENCSUBPATH}_windows_include
             )
 
         add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${HOST_FILE}> ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE} ${ARGN})
