@@ -3,15 +3,15 @@
 
 
 ## This function is to add test for given host file and enclave file.
-## TEST_NAME	: test name for add test.
-## HOST_FILE	: Host application executable file name.
-## ENC_FILE 	: Signed/Unsigned enclave file name.
-## DESCRIPTION	: For ADD_WINDOWS_ENCLAVE_TESTS enabled function will copy signed
-##			enclave file from Linux build location to windows build location
-##			after checking if both host and enclave file exists at specified
-##			location.
-##			NOTE : Any additional arguments after ENC_FILE argument are passed
-##			directly to add_test.
+## TEST_NAME    : test name for add test.
+## HOST_FILE    : Host application executable file name.
+## ENC_FILE     : Signed/Unsigned enclave file name.
+## DESCRIPTION  : For ADD_WINDOWS_ENCLAVE_TESTS enabled function will copy signed
+##                      enclave file from Linux build location to windows build location
+##                      after checking if both host and enclave file exists at specified
+##                      location.
+##                      NOTE : Any additional arguments after ENC_FILE argument are passed
+##                      directly to add_test.
 
 function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
 
@@ -52,17 +52,19 @@ function(add_enclave_test TEST_NAME HOST_FILE ENC_FILE)
         # custom rule to copy binary from linux
         # take a dependency on host binary to make sure it exists in addition to
         # enc binary in linux
-        add_custom_command(OUTPUT ${TEST_NAME}_windows_include
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}
-            DEPENDS $<TARGET_FILE:${HOST_FILE}> ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            )
+        if (NOT TARGET ${CMAKE_CURRENT_BINARY_DIR}__windows_include)
+                add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}_windows_include
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH} ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}
+                DEPENDS $<TARGET_FILE:${HOST_FILE}> ${LINUX_BIN_DIR}/${TEST_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                )
+        endif()
 
         # add a custom target to ALL so that this step always needs to be run if
         # this function is invoked
         get_filename_component(TEST_NAME_WITHOUT_SLASH ${TEST_NAME} NAME)
         add_custom_target(${TEST_NAME_WITHOUT_SLASH}.windows ALL
-            DEPENDS ${TEST_NAME}_windows_include
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}_windows_include
             )
 
         add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${HOST_FILE}> ${CMAKE_CURRENT_BINARY_DIR}/${TEST_ENCSUBPATH}/${TEST_ENCFILE} ${ARGN})
