@@ -78,7 +78,7 @@ if (NOT TARGET openenclave::sgx_dcap_ql)
     find_library(SGX_DCAP_QL_LIB NAMES sgx_dcap_ql)
   elseif (WIN32)
     find_library(SGX_DCAP_QL_LIB NAMES sgx_dcap_ql
-                 ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
+	    PATHS ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
   endif ()
   if (NOT SGX_DCAP_QL_LIB)
     message(FATAL_ERROR "-- Looking for sgx_dcap_ql library - not found")
