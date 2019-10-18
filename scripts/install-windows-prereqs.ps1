@@ -32,7 +32,7 @@ Param(
     [string]$AzureDCAPNupkgHash = '79C698B61CADA32F56F26647B96BBB1C00B7409A6646597C7CC2908A57677256',
     [string]$Python3ZipURL = 'https://www.python.org/ftp/python/3.7.4/python-3.7.4-embed-amd64.zip',
     [string]$Python3ZipHash = 'FB65E5CD595AD01049F73B47BC0EE23FD03F0CBADC56CB318990CEE83B37761B',
-    [Parameter(mandatory=$true)][string]$InstallPath,
+    [Parameter(mandatory=$true)][string]$NugetPackagePath,
     [Parameter(mandatory=$true)][ValidateSet("SGX1FLC", "SGX1", "SGX1FLC-NoDriver")][string]$LaunchConfiguration,
     [Parameter(mandatory=$true)][ValidateSet("None", "Azure")][string]$DCAPClientType
 )
@@ -40,7 +40,7 @@ Param(
 $ErrorActionPreference = "Stop"
 
 $PACKAGES_DIRECTORY = Join-Path $env:TEMP "packages"
-$OE_NUGET_DIR = Join-Path $InstallPath "prereqs\nuget"
+$OE_NUGET_DIR = $NugetPackagePath
 
 $PACKAGES = @{
     "git" = @{
@@ -313,8 +313,8 @@ function Install-Nuget {
     Install-ZipTool -ZipPath $PACKAGES["nuget"]["local_file"] `
                     -InstallDirectory $tempInstallDir `
                     -EnvironmentPath @("$tempInstallDir")
-    $installDir = Join-Path $env:ProgramFiles "nuget-3.4.3"
-    New-Directory -Path $installDir -RemoveExisting
+    $installDir = Join-Path $env:ProgramFiles "OpenEnclaveDeps"
+    New-Directory -Path $installDir
     Move-Item -Path "$tempInstallDir\build\native\Nuget.exe" -Destination $installDir
     Add-ToSystemPath -Path $installDir
 }
@@ -328,8 +328,8 @@ function Install-Python3 {
                     -InstallDirectory $tempInstallDir `
                     -EnvironmentPath @("$tempInstallDir")
 
-    $installDir = Join-Path $env:ProgramFiles "python-3.7.4"
-    New-Directory -Path $installDir -RemoveExisting
+    $installDir = Join-Path $env:ProgramFiles "OpenEnclaveDeps"
+    New-Directory -Path $installDir
     Move-Item -Path "$tempInstallDir\*" -Destination $installDir
     Add-ToSystemPath -Path $installDir
 }
@@ -340,29 +340,6 @@ function Install-Git {
                  -InstallDirectory $installDir `
                  -ArgumentList @("/SILENT") `
                  -EnvironmentPath @("$installDir\cmd", "$installDir\bin", "$installDir\mingw64\bin")
-}
-
-function Install-OpenSSL {
-    $installDir = $installDir = Join-Path $env:ProgramFiles "OpenSSL-Win64"
-    Install-Tool -InstallerPath $PACKAGES["openssl"]["local_file"] `
-                 -InstallDirectory $installDir `
-                 -ArgumentList @("/silent", "/eula=accept") `
-                 -EnvironmentPath @($installDir)
-
-    $binDir = Join-Path $installDir "bin"
-    $systemPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-    $currentPath = $env:PATH
-    if($binDir -notin $systemPath) {
-         $systemPath = "$binDir;$systemPath"
-    }
-    if($binDir -notin $currentPath) {
-         $currentPath = "$binDir;$currentPath"
-    }
-    $env:PATH = $currentPath
-    setx.exe /M PATH $systemPath
-    if($LASTEXITCODE) {
-        Throw "Failed to set the new system path"
-    }
 }
 
 function Install-7Zip {
@@ -418,7 +395,7 @@ function Install-VisualStudio {
 }
 
 function Install-OCaml {
-    $installDir = Join-Path $env:ProgramFiles "OCaml"
+    $installDir = Join-Path $env:ProgramFiles "OpenEnclaveDeps"
     $tmpDir = Join-Path $PACKAGES_DIRECTORY "ocpwin64"
     if(Test-Path -Path $tmpDir) {
         Remove-Item -Recurse -Force -Path $tmpDir
@@ -426,7 +403,7 @@ function Install-OCaml {
     Install-ZipTool -ZipPath $PACKAGES["ocaml"]["local_file"] `
                     -InstallDirectory $tmpDir `
                     -EnvironmentPath @("$installDir\bin")
-    New-Directory -Path $installDir -RemoveExisting
+    New-Directory -Path $installDir
     Move-Item -Path "$tmpDir\*\*" -Destination $installDir
 }
 
@@ -438,9 +415,6 @@ function Install-LLVM {
 
 function Install-Shellcheck {
     $installDir = Join-Path $env:ProgramFiles "shellcheck"
-    if(Test-Path -Path $installDir) {
-        Remove-Item -Path $installDir -Force -Recurse
-    }
     Install-ZipTool -ZipPath $PACKAGES["shellcheck"]["local_file"] `
                     -InstallDirectory $installDir `
                     -EnvironmentPath @("$installDir")
@@ -592,7 +566,7 @@ function Install-DCAP-Dependencies {
     }
     if (($LaunchConfiguration -eq "SGX1FLC") -or ($LaunchConfiguration -eq "SGX1FLC-NoDriver") -or ($DCAPClientType -eq "Azure"))
     {
-        & "$PACKAGES_DIRECTORY\nuget.exe" install 'DCAP_Components' -Source "$TEMP_NUGET_DIR;nuget.org" -OutputDirectory "$OE_NUGET_DIR" -ExcludeVersion
+        & nuget.exe install 'DCAP_Components' -Source "$TEMP_NUGET_DIR;nuget.org" -OutputDirectory "$OE_NUGET_DIR" -ExcludeVersion
         if($LASTEXITCODE -ne 0) {
             Throw "Failed to install nuget DCAP_Components"
         }
@@ -636,13 +610,17 @@ function Install-AzureDCAPWindows {
 }
 
 try {
+    $openEnclaveDepsPath = "$env:ProgramFiles\OpenEnclaveDeps"
+    if(Test-Path -Path $openEnclaveDepsPath) {
+      Remove-Item -Recurse -Force $openEnclaveDepsPath
+    }
+
     Start-LocalPackagesDownload
 
     Install-7Zip
     Install-Nuget
     Install-Python3
     Install-VisualStudio
-    Install-OpenSSL
     Install-LLVM
     Install-Git
     Install-OCaml
