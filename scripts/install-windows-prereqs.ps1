@@ -40,7 +40,7 @@ Param(
 $ErrorActionPreference = "Stop"
 
 $PACKAGES_DIRECTORY = Join-Path $env:TEMP "packages"
-$OE_NUGET_DIR = Join-Path $InstallPath "prereqs\nuget"
+$OE_NUGET_DIR = $InstallPath
 
 $PACKAGES = @{
     "git" = @{
